@@ -60,24 +60,36 @@ async def search_clanrank(bot, ev: CQEvent):
             await bot.send(ev, '参数错误，请重试')
             return
         clan_name = s[0]
-        default_data_dict = json.loads(get_default_data())
-        history_list = default_data_dict['history']
-        history_list.sort(reverse = True)
-        result_list = []
-        for history in history_list:
-            clan_data_dict = json.loads(get_clan_data(history, clan_name))
-            data = clan_data_dict['data']
-            if len(data) != 0:
-                name = data[0]['clan_name']
-                rank = data[0]['rank']
-                if name == clan_name:
-                    result_list.append(f'{rank}名, 记录时间: {second2time(history)}')
         if len(s) == 1:
-            msg_head = f'{clan_name}公会最新的会战名次为:\n'
-            msg_part = result_list[0] if len(result_list)!=0 else ''
+            clan_data_dict = json.loads(get_clan_data(0, clan_name))
+            clan_data = clan_data_dict['data']
+            if len(clan_data)!=0 and clan_data[0]['clan_name']==clan_name:
+                rank = clan_data[0]['rank']
+                ts = clan_data_dict['ts']
+                msg_head = f'{clan_name}公会最新的会战名次为:\n'
+                msg_part = f'{rank}名, 记录时间: {second2time(ts)}'
+            else:
+                await bot.send(ev, f'未找到{clan_name}公会的最新名次')
+                return
         else:
-            msg_head = f'{clan_name}公会记录在档的会战名次为:\n'
-            msg_part = '\n'.join(result_list)
+            default_data_dict = json.loads(get_default_data())
+            history_list = default_data_dict['history']
+            history_list.sort(reverse = True)
+            result_list = []
+            for history in history_list:
+                clan_data_dict = json.loads(get_clan_data(history, clan_name))
+                data = clan_data_dict['data']
+                if len(data) != 0:
+                    name = data[0]['clan_name']
+                    rank = data[0]['rank']
+                    if name == clan_name:
+                        result_list.append(f'{rank}名, 记录时间: {second2time(history)}')
+            if len(result_list) != 0:    
+                msg_head = f'{clan_name}公会记录在档的会战名次为:\n'
+                msg_part = '\n'.join(result_list)
+            else:
+                await bot.send(ev, f'未找到{clan_name}公会的相关数据')
+                return
         await bot.send(ev, msg_head + msg_part)
     except:
         await bot.send(ev, '指令发生错误，请重试')
